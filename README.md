@@ -1,153 +1,103 @@
-# Frecuencia
+# Easy Radio
 
-Una radio automática para un VPS, con biblioteca privada y una página pública para escuchar. Interfaz oscura inspirada en Spotify, adaptable a móvil, sin framework de frontend ni servicios externos.
+Una aplicación para levantar tu propio streaming de audio de forma simple. Sube tus canciones, organiza la lista y comparte una emisión continua desde un VPS.
 
-## Instancia publicada
+Incluye un panel de administración para gestionar tu música y una página pública para escuchar la radio desde el navegador. La emisión sigue funcionando aunque cierres el panel.
 
-- Web: https://radio.otrasmaneras.com
-- Emisión MP3 continua: https://radio.otrasmaneras.com/stream
-- Proxy: Caddy en el host → aplicación en `127.0.0.1:4173` → Icecast en la red privada de Docker.
-- DNS público: Cloudflare. Caddy administra el certificado HTTPS del origen.
-- Configuración: `deploy/caddy/radio.caddy`, importada desde `/etc/caddy/Caddyfile`.
-- `PUBLIC_ORIGIN` de la instancia: `https://radio.otrasmaneras.com`.
+## Qué puedes hacer
 
-Entra en **Administrar**, carga canciones y pulsa **Iniciar emisión**. `/stream` devuelve audio mientras la estación emite y un estado de no disponibilidad cuando está detenida o vacía. Los oyentes escuchan la misma emisión continua, con el pequeño desfase de sus buffers; la preescucha de la biblioteca es privada y no cambia esa emisión.
+- Subir canciones arrastrando archivos o seleccionándolos desde tu equipo.
+- Organizar la biblioteca, buscar por título o artista y cambiar el orden de reproducción.
+- Mezclar la lista y reproducirla en bucle.
+- Preescuchar canciones sin cambiar lo que escucha la audiencia.
+- Iniciar o detener la emisión y saltar a la siguiente canción.
+- Compartir un reproductor web o la URL directa del streaming.
+- Consultar la canción actual y el número de oyentes conectados.
 
-Caddy tiene la API de administración desactivada en este VPS. Tras validar la configuración con `caddy validate --config /etc/caddy/Caddyfile`, se recarga mediante `systemctl kill --kill-who=main --signal=SIGUSR1 caddy`.
+Acepta **MP3, FLAC, WAV, OGG y M4A**. La salida es una señal **MP3 estéreo a 128 kbps**, compatible con navegadores y reproductores como VLC.
 
-## Arranque con Docker
+## Empezar
 
-Requisitos: Docker Engine con Compose. Para desarrollar sin Docker: Node.js 22.13 o superior y FFmpeg/ffprobe.
+Necesitas Docker con Compose y Node.js 22.13 o superior para generar la configuración inicial.
 
 ```bash
+git clone https://github.com/otras-maneras/easy-radio.git
+cd easy-radio
 node scripts/setup.mjs
 docker compose up -d --build
 ```
 
-Abre `http://127.0.0.1:4173`. En un VPS puedes acceder mediante un túnel desde tu ordenador:
+Abre **http://127.0.0.1:4173** y sigue estos pasos:
+
+1. Pulsa **Administrar**.
+2. Introduce la contraseña generada en `ADMIN_PASSWORD`, dentro de `.env`.
+3. Sube tus canciones y elige el orden de la lista.
+4. Pulsa **Iniciar emisión** si la estación está detenida.
+
+El asistente crea contraseñas aleatorias y conserva tu configuración si `.env` ya existe. También puedes preparar ese archivo manualmente a partir de [`.env.example`](.env.example), sustituyendo todos los valores de ejemplo.
+
+Si lo instalas en un VPS, puedes acceder al panel mediante un túnel SSH mientras configuras el dominio:
 
 ```bash
 ssh -L 4173:127.0.0.1:4173 tu_usuario@tu_vps
 ```
 
-Abre entonces `http://localhost:4173` en tu navegador. Pulsa **Administrar** e introduce el valor de `ADMIN_PASSWORD` del archivo `.env`. El asistente genera secretos aleatorios y no sobrescribe una configuración existente.
+## Compartir la radio
 
-La aplicación escucha solamente en loopback. Icecast y el puerto de control de Liquidsoap quedan dentro de la red de Docker. La emisión pública pasa por `/stream`; no hace falta exponer sus puertos.
+Al publicar la aplicación con un dominio tendrás dos enlaces:
 
-## Qué incluye
+| Enlace | Uso |
+| --- | --- |
+| `https://radio.tudominio.com` | Página pública con reproductor |
+| `https://radio.tudominio.com/stream` | Audio MP3 continuo para reproductores externos |
 
-- Carga múltiple y arrastrar archivos; se procesan uno a uno para limitar memoria.
-- MP3, FLAC, WAV, OGG y M4A; hasta 50 MB por archivo, con validación mediante ffprobe.
-- Metadatos de título, artista y duración; búsqueda en la biblioteca.
-- Reordenar, mezclar la lista y eliminar canciones.
-- Preescucha privada independiente de la emisión pública.
-- Emisión MP3 estéreo a 128 kbps, repetición de la lista y controles de inicio, parada y salto.
-- Estado de conexión, canción actual y oyentes consultados a Icecast.
-- Contraseña de administración, cookie HttpOnly, validación de origen y límite de intentos de acceso.
-- Sesiones revocables en el servidor, con caducidad absoluta y por inactividad.
-- API sin root, raíz de contenedor en solo lectura y límites de CPU, memoria, procesos, subidas y oyentes.
-- SQLite en modo WAL y archivos persistentes en el volumen `stream-radio_radio-data`.
+Configura `PUBLIC_ORIGIN` en `.env` y utiliza un proxy inverso con HTTPS. La [guía de despliegue](docs/deployment.md) incluye un ejemplo con Caddy, configuración, copias de seguridad y actualizaciones.
 
-Liquidsoap arranca la salida automáticamente con Docker. Si la biblioteca está vacía, la estación queda fuera del aire; al añadir canciones se incorporan a la lista y comienza la emisión. Detener la emisión cierra la salida de Icecast, pero los servicios siguen funcionando. Reiniciar Liquidsoap vuelve a iniciar la salida.
+## Cómo funciona
 
-La API recarga la lista en Liquidsoap después de cada cambio de biblioteca. Los cambios se aplican a las próximas canciones; puede haber una canción ya preparada por Liquidsoap. Al iniciar una emisión se recarga la lista y se descarta la referencia de reproducción anterior. Mezclar genera un nuevo orden y lo repite hasta que la biblioteca o el modo cambien. Esta primera versión tiene una única lista; no incluye horarios, micrófono ni mezcla entre canciones.
+Easy Radio guarda la biblioteca y su configuración en SQLite. Liquidsoap reproduce las canciones y codifica la señal; Icecast la distribuye a quienes se conectan. Todos escuchan la misma emisión, con el pequeño desfase de sus reproductores.
 
-## Desarrollo
+Docker Compose levanta los tres servicios y conserva la música en un volumen persistente. La administración y los archivos originales requieren iniciar sesión; la emisión es pública.
+
+Actualmente está pensado para una estación con una lista de reproducción automática.
+
+## Configuración
+
+Los valores predeterminados permiten empezar con una biblioteca pequeña e ir ajustando la instalación:
+
+| Límite | Valor inicial |
+| --- | --- |
+| Tamaño por archivo | 50 MiB |
+| Biblioteca | 5 GiB o 5.000 canciones |
+| Subidas simultáneas | 2 |
+| Oyentes simultáneos | 100 |
+
+Puedes cambiar los límites de la aplicación en `.env`. Las variables disponibles están en [`.env.example`](.env.example); los límites de CPU y memoria están en [`compose.yaml`](compose.yaml).
+
+Consulta [SECURITY.md](SECURITY.md) para conocer las medidas de seguridad y los aspectos pendientes de reforzar.
+
+## Desarrollo y contribuciones
+
+El panel y la API están escritos en TypeScript, con Node.js, Fastify y SQLite. La interfaz utiliza HTML y CSS.
+
+Para desarrollar necesitas Node.js 22.13 o superior y FFmpeg con `ffprobe`:
 
 ```bash
 npm ci
 npm run setup
-npm run typecheck
 npm run build
-npm test
 npm run dev
 ```
 
-Para comprobar la pila completa en ejecución, `npm run test:stream` carga un tono temporal, verifica audio y metadatos, prueba salto/parada/inicio, elimina el tono y deja la emisión detenida. `npm run test:browser` comprueba acceso, carga, búsqueda, preescucha y diseño en escritorio/móvil; requiere instalar Chromium con `npx playwright install chromium`. Estas comprobaciones son para una instancia de desarrollo.
+Después de cambiar la interfaz, repite `npm run build`. Sin Icecast y Liquidsoap puedes trabajar en la biblioteca y la preescucha; para probar la emisión completa utiliza Docker Compose.
 
-El servidor de desarrollo usa los archivos de `dist/public`; repite `npm run build` tras cambiar la interfaz. Sin Icecast y Liquidsoap, puedes gestionar y preescuchar la biblioteca; el estado indica que la emisión no está conectada.
-
-## Publicación con dominio y HTTPS
-
-Configura `PUBLIC_ORIGIN=https://radio.tudominio.com` en `.env`, apunta el dominio a tu VPS y utiliza un proxy inverso con TLS. Reinicia la aplicación tras cambiar `.env`:
+Para comprobar los cambios:
 
 ```bash
-docker compose up -d --force-recreate app
+npm run typecheck
+npm test
 ```
 
-Ejemplo de bloque para un Nginx que ya gestione el certificado TLS:
+Las [pruebas de integración](docs/deployment.md#pruebas-de-integración) permiten verificar también el streaming y el navegador.
 
-```nginx
-location / {
-    proxy_pass http://127.0.0.1:4173;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    client_max_body_size 51m;
-    proxy_read_timeout 1h;
-}
-location = /stream {
-    proxy_pass http://127.0.0.1:4173;
-    proxy_set_header Host $host;
-    proxy_buffering off;
-    proxy_read_timeout 24h;
-}
-```
-
-La validación de origen requiere que el navegador use exactamente el `PUBLIC_ORIGIN` configurado. Sin esta variable, se admite el origen HTTP del encabezado Host. Para instalar varios proyectos en el mismo servidor, usa un subdominio para esta radio.
-
-## Tamaño y recursos
-
-La interfaz pesa aproximadamente 45 KB sin compresión, excluyendo mapas de código. Los servicios y sus dependencias ocupan bastante más; `docker image ls` muestra los tamaños de las imágenes y `docker system df` distingue el espacio compartido.
-
-Presupuesto inicial, pendiente de medir con tu biblioteca y audiencia: 1 vCPU y 1 GB RAM; 2 GB ofrecen más margen. El consumo depende del decodificador, la codificación, los archivos y el número de oyentes. Los servicios codifican una sola emisión para todos.
-
-Medición de desarrollo del 22/10/2026: aproximadamente 140 MiB de RAM entre los tres contenedores durante una prueba corta con audio sintético y sin audiencia real. CPU observada durante esa prueba: aproximadamente 6 % de un núcleo en total. No es una prueba de carga. Las imágenes construidas ocupan aproximadamente 708 MB (aplicación con FFmpeg) y 615 MB (imagen compartida por Icecast y Liquidsoap), antes de descontar capas compartidas.
-
-A 128 kbps, sin contar sobrecarga del protocolo:
-
-| Oyentes simultáneos | Salida de red | Tráfico en 30 días continuos |
-| --- | --- | --- |
-| 1 | 0,128 Mbps | 41,5 GB |
-| 10 | 1,28 Mbps | 414,7 GB |
-| 100 | 12,8 Mbps | 4,15 TB |
-
-1.000 canciones de cuatro minutos a 192 kbps ocupan aproximadamente 5,76 GB. La biblioteca original se conserva; la emisión se convierte a 128 kbps en tiempo real.
-
-```bash
-docker stats --no-stream
-docker compose logs --tail=100
-```
-
-## Datos y mantenimiento
-
-Los registros Docker se rotan automáticamente. No ejecutes `docker compose down -v` si quieres conservar la biblioteca.
-
-Para una copia consistente del volumen, detén los servicios durante la copia:
-
-```bash
-docker compose stop
-mkdir -p backups
-docker run --rm -v stream-radio_radio-data:/data:ro -v "$PWD/backups:/backup" debian:bookworm-slim tar czf /backup/radio-data.tar.gz -C /data .
-docker compose start
-```
-
-Conserva también `.env` de forma privada. Las imágenes se basan en las ramas mantenidas Node 22 y Debian Bookworm; el archivo `package-lock.json` fija las dependencias de la aplicación. Actualiza y vuelve a construir periódicamente.
-
-## Límites y actualización de instalaciones anteriores
-
-Consulta [SECURITY.md](SECURITY.md) para los controles y sus límites. Por defecto se admiten dos subidas simultáneas, 100 oyentes, cuatro preescuchas y una biblioteca de hasta 5 GiB o 5.000 canciones. Los valores configurables aparecen en `.env.example`. Las subidas que excedan un límite se rechazan y se eliminan sus archivos parciales. Los límites de memoria/CPU de `compose.yaml` son topes, no recursos reservados.
-
-Cerrar sesión invalida también cualquier copia de esa cookie. Las sesiones duran como máximo 12 horas y caducan tras dos horas sin actividad autenticada. Cambiar `ADMIN_PASSWORD` o `SESSION_SECRET` y reiniciar la aplicación invalida las sesiones existentes. Al actualizar desde la versión inicial hay que iniciar sesión de nuevo; la contraseña no cambia.
-
-El contenedor de la API utiliza el UID/GID 1000 y las instalaciones nuevas reciben el volumen con ese propietario. Para una biblioteca existente creada por la versión que se ejecutaba como root, haz una copia de seguridad y migra sus permisos antes de levantar la nueva API:
-
-```bash
-docker compose build app
-docker compose stop app
-docker run --rm --network none --user 0 --cap-drop ALL --cap-add CHOWN --cap-add FOWNER \
-  -v stream-radio_radio-data:/data --entrypoint sh stream-radio-app \
-  -c 'chown -R 1000:1000 /data && chmod 600 /data/radio.sqlite*'
-docker compose up -d
-```
-
-El cambio afecta solo al volumen de esta radio. Liquidsoap conserva acceso de lectura a las canciones y a la lista. Esta misma migración de propietario es necesaria al restaurar una copia antigua que haya guardado archivos propiedad de root.
+Las correcciones, mejoras de documentación y nuevas funciones son bienvenidas. Puedes abrir un issue para proponer un cambio o enviar una pull request explicando qué resuelve y cómo lo comprobaste.
