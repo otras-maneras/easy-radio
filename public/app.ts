@@ -108,7 +108,12 @@ function updatePlayer() {
 }
 async function toggleAudio(live = false) {
   if (live && preview) { audio.pause(); preview = null; audio.removeAttribute('src'); }
-  if (!audio.paused) { audio.pause(); return; }
+  if (!audio.paused) {
+    audio.pause();
+    // Release the live connection and its listener slot while paused.
+    if (!preview) { audio.removeAttribute('src'); audio.load(); }
+    return;
+  }
   if (!preview && !status.live) { toast(status.connected ? 'La emisión está detenida. Iníciala desde la cabina.' : 'El servidor de radio aún no está conectado. Inicia los servicios de Docker.'); return; }
   if (!preview) audio.src = `/stream?t=${Date.now()}`;
   try { await audio.play(); } catch { toast('No se pudo reproducir el audio. Comprueba la emisión y vuelve a intentarlo.'); }

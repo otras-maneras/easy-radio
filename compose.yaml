@@ -9,6 +9,20 @@ services:
     build: .
     restart: unless-stopped
     init: true
+    user: '1000:1000'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
+    mem_limit: 384m
+    memswap_limit: 384m
+    cpus: 0.75
+    pids_limit: 128
+    ulimits:
+      nofile:
+        soft: 2048
+        hard: 2048
     env_file: .env
     environment:
       HOST: 0.0.0.0
@@ -33,6 +47,11 @@ services:
       dockerfile: docker/radio.Dockerfile
     restart: unless-stopped
     init: true
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 64m
+    memswap_limit: 64m
+    cpus: 0.25
+    pids_limit: 64
     environment:
       ICECAST_PASSWORD: ${ICECAST_PASSWORD:?Run npm run setup first}
       ICECAST_ADMIN_PASSWORD: ${ICECAST_ADMIN_PASSWORD:?Run npm run setup first}
@@ -45,6 +64,15 @@ services:
       dockerfile: docker/radio.Dockerfile
     restart: unless-stopped
     init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m,mode=1777
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.75
+    pids_limit: 256
     environment:
       ICECAST_PASSWORD: ${ICECAST_PASSWORD:?Run npm run setup first}
     user: liquidsoap

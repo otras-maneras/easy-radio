@@ -44,6 +44,8 @@ La aplicación escucha solamente en loopback. Icecast y el puerto de control de 
 - Emisión MP3 estéreo a 128 kbps, repetición de la lista y controles de inicio, parada y salto.
 - Estado de conexión, canción actual y oyentes consultados a Icecast.
 - Contraseña de administración, cookie HttpOnly, validación de origen y límite de intentos de acceso.
+- Sesiones revocables en el servidor, con caducidad absoluta y por inactividad.
+- API sin root, raíz de contenedor en solo lectura y límites de CPU, memoria, procesos, subidas y oyentes.
 - SQLite en modo WAL y archivos persistentes en el volumen `stream-radio_radio-data`.
 
 Liquidsoap arranca la salida automáticamente con Docker. Si la biblioteca está vacía, la estación queda fuera del aire; al añadir canciones se incorporan a la lista y comienza la emisión. Detener la emisión cierra la salida de Icecast, pero los servicios siguen funcionando. Reiniciar Liquidsoap vuelve a iniciar la salida.
@@ -130,3 +132,22 @@ docker compose start
 ```
 
 Conserva también `.env` de forma privada. Las imágenes se basan en las ramas mantenidas Node 22 y Debian Bookworm; el archivo `package-lock.json` fija las dependencias de la aplicación. Actualiza y vuelve a construir periódicamente.
+
+## Límites y actualización de instalaciones anteriores
+
+Consulta [SECURITY.md](SECURITY.md) para los controles y sus límites. Por defecto se admiten dos subidas simultáneas, 100 oyentes, cuatro preescuchas y una biblioteca de hasta 5 GiB o 5.000 canciones. Los valores configurables aparecen en `.env.example`. Las subidas que excedan un límite se rechazan y se eliminan sus archivos parciales. Los límites de memoria/CPU de `compose.yaml` son topes, no recursos reservados.
+
+Cerrar sesión invalida también cualquier copia de esa cookie. Las sesiones duran como máximo 12 horas y caducan tras dos horas sin actividad autenticada. Cambiar `ADMIN_PASSWORD` o `SESSION_SECRET` y reiniciar la aplicación invalida las sesiones existentes. Al actualizar desde la versión inicial hay que iniciar sesión de nuevo; la contraseña no cambia.
+
+El contenedor de la API utiliza el UID/GID 1000 y las instalaciones nuevas reciben el volumen con ese propietario. Para una biblioteca existente creada por la versión que se ejecutaba como root, haz una copia de seguridad y migra sus permisos antes de levantar la nueva API:
+
+```bash
+docker compose build app
+docker compose stop app
+docker run --rm --network none --user 0 --cap-drop ALL --cap-add CHOWN --cap-add FOWNER \
+  -v stream-radio_radio-data:/data --entrypoint sh stream-radio-app \
+  -c 'chown -R 1000:1000 /data && chmod 600 /data/radio.sqlite*'
+docker compose up -d
+```
+
+El cambio afecta solo al volumen de esta radio. Liquidsoap conserva acceso de lectura a las canciones y a la lista. Esta misma migración de propietario es necesaria al restaurar una copia antigua que haya guardado archivos propiedad de root.

@@ -50,6 +50,7 @@ test('authenticated library: upload, validation, order, persistence and deletion
     assert.equal((await app.inject(`/api/audio/${one}`)).statusCode, 401);
     const partial = await app.inject({ url: `/api/audio/${one}`, headers: { ...auth, range: 'bytes=0-99' } });
     assert.equal(partial.statusCode, 206); assert.equal(partial.rawPayload.length, 100);
+    assert.match(String(partial.headers['cache-control']), /no-store/, 'authenticated audio must not be cached publicly');
     assert.equal((await app.inject({ method: 'PUT', url: '/api/order', headers: auth, payload: { ids: [one, one] } })).statusCode, 400);
     assert.equal((await app.inject({ method: 'PUT', url: '/api/order', headers: auth, payload: { ids: [two, one] } })).statusCode, 200);
     assert.equal((await app.inject({ method: 'PUT', url: '/api/shuffle', headers: auth, payload: { shuffle: true } })).statusCode, 200);
@@ -59,6 +60,7 @@ test('authenticated library: upload, validation, order, persistence and deletion
     assert.ok(!(JSON.stringify(library).includes('filename')));
     await app.close();
     app = await buildApp(config);
+    assert.equal((await app.inject({ url: '/api/tracks', headers: { cookie } })).statusCode, 200, 'sessions survive a restart with unchanged credentials');
     cookie = await login();
     library = (await app.inject({ url: '/api/tracks', headers: { cookie } })).json();
     assert.equal(library.tracks.length, 2); assert.equal(library.shuffle, true);
@@ -67,5 +69,7 @@ test('authenticated library: upload, validation, order, persistence and deletion
     assert.ok(!(await readFile(join(dataDir, 'playlist.m3u'), 'utf8')).includes(one));
     assert.equal((await app.inject({ method: 'POST', url: '/api/radio/invalid', headers: { ...headers, cookie } })).statusCode, 400);
     assert.equal((await app.inject({ method: 'POST', url: '/api/logout', headers: { ...headers, cookie } })).statusCode, 200);
+    assert.equal((await app.inject({ url: '/api/tracks', headers: { cookie } })).statusCode, 401, 'a copied cookie is revoked after logout');
+    assert.equal((await app.inject({ url: '/api/session', headers: { cookie } })).json().authenticated, false);
   } finally { await app.close(); await rm(dataDir, { recursive: true, force: true }); }
 });
