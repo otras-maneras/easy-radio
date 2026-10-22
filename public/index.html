@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101112"><meta name="description" content="Tu música, una frecuencia. Una radio independiente para escuchar y compartir.">
+  <title>Frecuencia — Tu radio</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23b6f36c'/%3E%3Cpath d='M12 28V12h17v5H18v3h9v5h-9v3' fill='%23101112'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Frecuencia, inicio"><span class="brand-mark" data-icon="radio"></span>frecuencia<span class="brand-dot">.</span></a>
+      <p class="nav-caption">TU ESPACIO</p>
+      <nav aria-label="Navegación principal">
+        <button class="nav-item active" data-view="radio"><span data-icon="radio"></span>Tu estación<span class="nav-dot"></span></button>
+        <button class="nav-item" data-view="library"><span data-icon="library"></span>Biblioteca<span id="nav-count" class="count">0</span></button>
+      </nav>
+      <div class="sidebar-divider"></div>
+      <div class="library-label"><span>TU COLECCIÓN</span><button class="icon-button" id="sidebar-upload" aria-label="Añadir canciones" title="Añadir canciones"><span data-icon="plus"></span></button></div>
+      <button class="collection" data-view="library"><span class="collection-art" data-icon="music"></span><span><strong>Todas las canciones</strong><small id="collection-count">Tu biblioteca musical</small></span></button>
+      <div class="sidebar-bottom"><div class="signal-symbol" data-icon="antenna"></div><strong>Una señal muy tuya.</strong><p>La música que eliges.<br>El espacio que compartes.</p><span class="sidebar-foot">RADIO INDEPENDIENTE <span>↗</span></span></div>
+    </aside>
+    <main>
+      <header class="topbar"><div class="breadcrumb">Tu espacio <span>/</span> <strong id="breadcrumb-current">Tu estación</strong></div><div class="top-actions"><span class="connection"><span class="status-dot" id="connection-dot"></span><span id="connection-text">Conectando</span></span><button id="account-button" class="account-button"><span data-icon="user"></span><span id="account-label">Administrar</span></button></div></header>
+      <div class="page-content">
+        <section id="station-hero" class="hero" aria-labelledby="hero-title" hidden>
+          <div class="hero-copy"><div class="eyebrow"><span class="tiny-signal" data-icon="antenna"></span> TU RADIO, A TU MANERA</div><h1 id="hero-title">Dale frecuencia<br>a tu música<span>.</span></h1><p>Buenas canciones. Sin interrupciones.<br>Un lugar para compartir lo que suena contigo.</p><div class="hero-actions"><button class="button button-green" id="hero-play"><span data-icon="play"></span>Escuchar radio</button><button class="button button-glass" id="share-button"><span data-icon="share"></span>Compartir</button></div><div class="hero-bottom"><span class="mini-wave">▂ ▆ ▃ █ ▅ ▂</span><span>UNA ESTACIÓN. INFINITAS CONEXIONES.</span></div></div>
+          <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="record"><div class="record-label"><span>FRECUENCIA</span><b>f.</b><span>SIDE A · NONSTOP MUSIC</span></div><div class="record-hole"></div></div><span class="art-tag">SELECTED BY YOU ↗</span><div class="floating-tag"><span class="status-dot"></span>Hecha para sonar</div></div>
+        </section>
+        <section class="stats" aria-label="Estado de tu estación"><article><span class="stat-icon" data-icon="headphones"></span><div><span class="stat-label">Oyentes ahora</span><strong id="listeners">—</strong></div><span class="stat-hint">En tu frecuencia</span></article><article><span class="stat-icon" data-icon="music"></span><div><span class="stat-label">En tu biblioteca</span><strong id="track-total">—</strong></div><span class="stat-hint" id="duration-total">Tu selección musical</span></article><article><span class="stat-icon" data-icon="signal"></span><div><span class="stat-label">Calidad de emisión</span><strong>128 <small>kbps</small></strong></div><span class="stat-hint">MP3 · Estéreo</span></article></section>
+        <section class="music-section" aria-labelledby="section-title"><div class="section-heading"><div><p class="section-kicker" id="section-kicker">EL SONIDO DE TU ESTACIÓN</p><h2 id="section-title">Tu música, en un solo lugar</h2><p class="section-description" id="section-description">Construye la colección que da vida a tu radio.</p></div><button class="button button-green" id="upload-button"><span data-icon="plus"></span>Subir canciones</button></div>
+          <div class="library-toolbar" id="library-toolbar" hidden><div class="tabs"><button class="tab active" id="all-tab">Todas las canciones <span id="tab-count">0</span></button></div><div class="library-tools"><label class="search-box"><span data-icon="search"></span><input id="search" type="search" placeholder="Buscar en tu biblioteca" aria-label="Buscar canciones"></label><button id="shuffle-button" class="icon-button" title="Activar orden aleatorio" aria-label="Activar orden aleatorio" aria-pressed="false"><span data-icon="shuffle"></span></button></div></div>
+          <div id="drop-zone" class="drop-zone"><div class="empty-art"><span data-icon="music"></span><span class="empty-plus" data-icon="plus"></span></div><h3 id="empty-title">Toda gran radio empieza con una canción.</h3><p id="empty-description">Arrastra tus archivos aquí o sube tus primeras canciones.<br>Nosotros ponemos la frecuencia. Tú pones el sonido.</p><button class="button button-outline" id="empty-upload"><span data-icon="upload"></span>Añadir mi música</button><span class="format-note">MP3, FLAC, WAV, OGG Y M4A · HASTA 50 MB POR ARCHIVO</span></div>
+          <div class="track-table" id="track-table" hidden><div class="track-table-head"><span>#</span><span>TÍTULO</span><span>FECHA</span><span data-icon="clock" aria-label="Duración"></span><span></span></div><div id="track-rows"></div></div>
+          <div id="no-results" class="no-results" hidden>No hay canciones que coincidan con tu búsqueda.</div>
+          <div class="upload-progress" id="upload-progress" role="status" hidden><span class="spinner"></span><span id="upload-message">Subiendo canciones…</span></div>
+        </section>
+        <section id="broadcast-controls" class="broadcast-controls" hidden><div><span data-icon="antenna"></span><div><strong>Cabina de emisión</strong><p>Controla lo que escucha toda tu audiencia.</p></div></div><div class="broadcast-actions"><button id="start-broadcast" class="button button-outline">Iniciar emisión</button><button id="skip-broadcast" class="button button-outline">Siguiente canción</button><button id="stop-broadcast" class="button button-subtle">Detener</button></div></section>
+        <footer class="page-footer"><span>Hecho para escuchar. Diseñado para compartir.</span><span>frecuencia<span class="brand-dot">.</span></span></footer>
+      </div>
+    </main>
+  </div>
+  <footer class="player" aria-label="Reproductor"><div class="playing-info"><div class="now-art" data-icon="music"></div><div><strong id="now-title">Tu próxima canción favorita</strong><span id="now-artist">Sintoniza tu frecuencia</span></div><span id="playing-badge" class="playing-badge" hidden>EN DIRECTO</span></div><div class="player-center"><div class="player-buttons"><button id="return-live" class="icon-button" aria-label="Volver a la emisión en directo" title="Volver al directo"><span data-icon="antenna"></span></button><button class="main-play" id="player-play" aria-label="Escuchar radio"><span data-icon="play"></span></button><span id="player-mode">TU RADIO INDEPENDIENTE</span></div><div class="player-timeline"><span id="elapsed">EN DIRECTO</span><div class="timeline"><div id="timeline-progress"></div></div><span id="track-duration">∞</span></div></div><div class="player-volume"><span data-icon="volume"></span><input id="volume" type="range" min="0" max="1" value="0.8" step="0.01" aria-label="Volumen"><button id="copy-stream" class="icon-button" title="Copiar enlace del streaming" aria-label="Copiar enlace del streaming"><span data-icon="link"></span></button></div></footer>
+  <dialog id="login-dialog"><form id="login-form"><div class="dialog-top"><span class="brand-mark" data-icon="radio"></span><button type="button" class="icon-button" id="close-login" aria-label="Cerrar"><span data-icon="close"></span></button></div><p class="section-kicker">BIENVENIDO A TU CABINA</p><h2>Tu música empieza aquí.</h2><p>Introduce tu contraseña para gestionar la estación.</p><label for="password">Contraseña de administración</label><input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Tu contraseña"><p id="login-error" class="form-error" role="alert"></p><button type="submit" class="button button-green" id="login-submit">Entrar a mi estación <span data-icon="arrow"></span></button></form></dialog>
+  <input id="file-input" type="file" accept=".mp3,.ogg,.flac,.m4a,.wav" multiple hidden>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <audio id="audio" preload="none"></audio>
+</body>
+</html>

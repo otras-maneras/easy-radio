@@ -1,0 +1,61 @@
+name: stream-radio
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 5m
+    max-file: '2'
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 4173
+      DATA_DIR: /data
+      ICECAST_URL: http://icecast:8000
+      LIQUIDSOAP_HOST: liquidsoap
+    ports:
+      - '127.0.0.1:4173:4173'
+    volumes:
+      - radio-data:/data
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:4173/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    logging: *logging
+  icecast:
+    image: stream-radio-engine:local
+    build:
+      context: .
+      dockerfile: docker/radio.Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      ICECAST_PASSWORD: ${ICECAST_PASSWORD:?Run npm run setup first}
+      ICECAST_ADMIN_PASSWORD: ${ICECAST_ADMIN_PASSWORD:?Run npm run setup first}
+    command: ['/usr/local/bin/start-icecast']
+    logging: *logging
+  liquidsoap:
+    image: stream-radio-engine:local
+    build:
+      context: .
+      dockerfile: docker/radio.Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      ICECAST_PASSWORD: ${ICECAST_PASSWORD:?Run npm run setup first}
+    user: liquidsoap
+    command: ['liquidsoap', '/etc/radio.liq']
+    volumes:
+      - radio-data:/data:ro
+    depends_on:
+      app:
+        condition: service_healthy
+      icecast:
+        condition: service_started
+    logging: *logging
+volumes:
+  radio-data:

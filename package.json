@@ -1,0 +1,32 @@
+{
+  "name": "stream-radio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "node --env-file=.env --import tsx src/server.ts",
+    "build": "tsc && node scripts/build.mjs",
+    "start": "node --env-file=.env dist/server.js",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit --target ES2022 --module ESNext --moduleResolution bundler --lib ES2022,DOM --strict public/app.ts",
+    "setup": "node scripts/setup.mjs",
+    "test:stream": "node scripts/smoke.mjs",
+    "test:browser": "node scripts/browser-check.mjs"
+  },
+  "dependencies": {
+    "@fastify/multipart": "^9.0.0",
+    "@fastify/rate-limit": "^10.0.0",
+    "@fastify/static": "^10.1.7",
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

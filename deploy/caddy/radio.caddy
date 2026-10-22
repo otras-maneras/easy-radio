@@ -1,0 +1,19 @@
+radio.otrasmaneras.com {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+
+	request_body {
+		max_size 55MB
+	}
+
+	# Flush MP3 chunks immediately and leave long-lived connections open.
+	handle /stream {
+		reverse_proxy 127.0.0.1:4173 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:4173
+	}
+}
